@@ -1,9 +1,12 @@
 param (
     [Parameter(Mandatory)]
     [DateTime]$StartDate,
-    
+
     [Parameter(Mandatory)]
     [DateTime]$EndDate,
+
+    [Parameter()]
+    [string]$OutputFilename,
 
     [Parameter()]
     [int]$MaxEvents = 500
@@ -19,6 +22,27 @@ function Strip-String {
     )
 
     return $InputString.Substring(0, [Math]::Min($Limit, $InputString.Length))
+}
+
+# https://stackoverflow.com/questions/33145377/how-to-change-tab-width-when-converting-to-json-in-powershell
+function Format-Json([Parameter(Mandatory, ValueFromPipeline)][String] $json) {
+    $indent = 0;
+    ($json -Split "`r`n" | % {
+        if ($_ -match '[\}\]]\s*,?\s*$') {
+            # This line ends with ] or }, decrement the indentation level
+            $indent--
+        }
+        $line = ('  ' * $indent) + $($_.TrimStart() -replace '":  (["{[])', '": $1' -replace ':  ', ': ')
+        if ($_ -match '[\{\[]\s*$') {
+            # This line ends with [ or {, increment the indentation level
+            $indent++
+        }
+        $line
+    }) -Join "`n"
+}
+
+if ([string]::IsNullOrEmpty($OutputFilename)) {
+    $OutputFilename = Join-Path -Path $(Get-Location) -ChildPath "ironman-output.json"
 }
 
 if ($EndDate -lt $StartDate) {
@@ -61,6 +85,6 @@ $result = @{
     LanuchEvents = $events
 }
 
-$resultJson = $result | ConvertTo-Json
+$resultJson = $result | ConvertTo-Json | Format-Json
 
-echo $resultJson
+[System.IO.File]::WriteAllLines($OutputFilename, $resultJson)
