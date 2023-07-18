@@ -11,7 +11,7 @@ param (
 
 function Strip-String {
     param (
-        [Parameter(Mandatory, ValueFromPipeline)]
+        [Parameter(ValueFromPipeline)]
         [String]$InputString,
 
         [Parameter()]
