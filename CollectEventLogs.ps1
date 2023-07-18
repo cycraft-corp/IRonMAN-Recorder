@@ -1,3 +1,40 @@
+<#
+    .SYNOPSIS
+    Collects 4688 event logs within a specified date range.
+
+    .DESCRIPTION
+    This script collects event logs from the Windows Event Viewer within a specified date range.
+    The script requires the start and end dates for the collection, and allows you to specify an output filename and maximum number of events.
+
+    .PARAMETER StartDate
+    Specifies the start date for collecting event logs. Only logs generated on or after this date will be included.
+    This parameter is mandatory.
+
+    .PARAMETER EndDate
+    Specifies the end date for collecting event logs. Only logs generated before or on this date will be included.
+    This parameter is mandatory.
+
+    .PARAMETER OutputFilename
+    Specifies the filename for the output file where the collected event logs will be saved.
+    If not provided, the script will use a default filename "ironman-output.json".
+
+    .PARAMETER MaxEvents
+    Specifies the maximum number of events to collect.
+    If not provided, the script will collect up to 500 events.
+
+    .INPUTS
+    None. You should run this script on a Windows machine with access to the Event Viewer.
+
+    .OUTPUTS
+    The script generates an output file containing the collected event logs.
+    
+    .EXAMPLE
+    PS> .\CollectEventLogs.ps1 -StartDate "2023-07-01" -EndDate "2023-07-15"
+
+    .EXAMPLE
+    PS> .\CollectEventLogs.ps1 -StartDate "2023-07-01" -EndDate "2023-07-15" -OutputFilename "MyOutput.json" -MaxEvents 1000
+#>
+
 param (
     [Parameter(Mandatory)]
     [DateTime]$StartDate,
@@ -6,7 +43,7 @@ param (
     [DateTime]$EndDate,
 
     [Parameter()]
-    [string]$OutputFilename,
+    [string]$OutputFilename = "ironman-output.json",
 
     [Parameter()]
     [int]$MaxEvents = 500
@@ -41,8 +78,9 @@ function Format-Json([Parameter(Mandatory, ValueFromPipeline)][String] $json) {
     }) -Join "`n"
 }
 
-if ([string]::IsNullOrEmpty($OutputFilename)) {
-    $OutputFilename = Join-Path -Path $(Get-Location) -ChildPath "ironman-output.json"
+# turn relative path to absolute path
+if (![System.IO.Path]::IsPathRooted($OutputFilename)) {
+    $OutputFilename = Join-Path -Path $(Get-Location) -ChildPath $OutputFilename
 }
 
 if ($EndDate -lt $StartDate) {
