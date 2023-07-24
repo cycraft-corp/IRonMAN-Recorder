@@ -61,6 +61,19 @@ function Strip-String {
     return $InputString.Substring(0, [Math]::Min($Limit, $InputString.Length))
 }
 
+function Replace-EmptySID {
+    param (
+        [Parameter(ValueFromPipeline)]
+        [String]$InputString
+    )
+
+    if ($InputString -eq "S-1-0-0") {
+        return ""
+    } else {
+        return $InputString
+    }
+}
+
 # https://stackoverflow.com/questions/33145377/how-to-change-tab-width-when-converting-to-json-in-powershell
 function Format-Json([Parameter(Mandatory, ValueFromPipeline)][String] $json) {
     $indent = 0;
@@ -96,13 +109,12 @@ $events = @(Get-WinEvent -MaxEvents $MaxEvents -FilterHashtable @{
 } | ForEach-Object {
     @{
         Time = [Math]::Round((New-TimeSpan -Start (Get-Date "01/01/1970") -End ($_.TimeCreated)).TotalSeconds)
-	TTime = $_.TimeCreated.ToString()
         PID = $_.Properties[4].Value
         PPID = $_.Properties[7].Value
         ExeFile = $_.Properties[5].Value | Strip-String -Limit 1024
         ParentFile = $_.Properties[13].Value | Strip-String -Limit 1024
         Cmdline = $_.Properties[8].Value | Strip-String -Limit 2048
-        SID = $_.Properties[9].Value.Value | Strip-String -Limit 100
+        SID = $_.Properties[9].Value.Value | Replace-EmptySID | Strip-String -Limit 100
         ExtraTags = @()
     }
 })
